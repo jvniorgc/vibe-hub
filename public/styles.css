@@ -453,6 +453,12 @@ header {
     border-color: var(--accent);
 }
 
+.form-group select option {
+    background: #1e1e3f;
+    color: #ffffff;
+    padding: 10px;
+}
+
 .form-group input[type="color"] {
     height: 48px;
     cursor: pointer;
