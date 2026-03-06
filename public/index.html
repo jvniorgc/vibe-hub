@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HomeLab Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fa-solid fa-server"></i>
+                <h1>HomeLab Dashboard</h1>
+            </div>
+            <div class="header-right">
+                <span class="server-ip" id="server-ip">
+                    <i class="fa-solid fa-network-wired"></i>
+                    <span id="host-ip">Carregando...</span>
+                </span>
+                <button class="btn-refresh" onclick="loadServices()" title="Atualizar">
+                    <i class="fa-solid fa-rotate"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="actions">
+            <button class="btn-primary" onclick="openServiceModal()">
+                <i class="fa-solid fa-plus"></i> Novo Serviço
+            </button>
+            <button class="btn-secondary" onclick="openCategoryModal()">
+                <i class="fa-solid fa-folder-plus"></i> Nova Categoria
+            </button>
+        </div>
+
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <i class="fa-brands fa-docker"></i>
+                <div class="stat-info">
+                    <span class="stat-value" id="docker-count">0</span>
+                    <span class="stat-label">Containers Docker</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <i class="fa-solid fa-link"></i>
+                <div class="stat-info">
+                    <span class="stat-value" id="manual-count">0</span>
+                    <span class="stat-label">Serviços Manuais</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <i class="fa-solid fa-folder"></i>
+                <div class="stat-info">
+                    <span class="stat-value" id="category-count">0</span>
+                    <span class="stat-label">Categorias</span>
+                </div>
+            </div>
+        </div>
+
+        <main id="services-container">
+            <div class="loading">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <p>Carregando serviços...</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Serviço -->
+    <div id="service-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Adicionar Serviço</h2>
+                <button class="close-btn" onclick="closeServiceModal()">&times;</button>
+            </div>
+            <form id="service-form" onsubmit="saveService(event)">
+                <input type="hidden" id="service-id">
+                <div class="form-group">
+                    <label for="service-name">Nome do Serviço *</label>
+                    <input type="text" id="service-name" required placeholder="Ex: Portainer">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="service-ip">IP do Host</label>
+                        <input type="text" id="service-ip" placeholder="192.168.1.151">
+                    </div>
+                    <div class="form-group">
+                        <label for="service-port">Porta *</label>
+                        <input type="number" id="service-port" required placeholder="9000">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="service-protocol">Protocolo</label>
+                        <select id="service-protocol">
+                            <option value="http">HTTP</option>
+                            <option value="https">HTTPS</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="service-category">Categoria *</label>
+                        <select id="service-category" required></select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="service-icon">Ícone</label>
+                        <input type="text" id="service-icon" placeholder="fa-cube" value="fa-cube">
+                    </div>
+                    <div class="form-group">
+                        <label for="service-color">Cor</label>
+                        <input type="color" id="service-color" value="#00d9ff">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="service-description">Descrição</label>
+                    <input type="text" id="service-description" placeholder="Descrição breve do serviço">
+                </div>
+                <button type="submit" class="btn-save">
+                    <i class="fa-solid fa-floppy-disk"></i> Salvar Serviço
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Categoria -->
+    <div id="category-modal" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>Nova Categoria</h2>
+                <button class="close-btn" onclick="closeCategoryModal()">&times;</button>
+            </div>
+            <form id="category-form" onsubmit="saveCategory(event)">
+                <div class="form-group">
+                    <label for="category-name">Nome da Categoria</label>
+                    <input type="text" id="category-name" required placeholder="Ex: Streaming">
+                </div>
+                <button type="submit" class="btn-save">
+                    <i class="fa-solid fa-folder-plus"></i> Criar Categoria
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Docker Override -->
+    <div id="docker-modal" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2 id="docker-modal-title">Configurar Container</h2>
+                <button class="close-btn" onclick="closeDockerModal()">&times;</button>
+            </div>
+            <form id="docker-form" onsubmit="saveDockerOverride(event)">
+                <input type="hidden" id="docker-id">
+                <input type="hidden" id="docker-name">
+                <div class="form-group">
+                    <label for="docker-port">Porta</label>
+                    <input type="number" id="docker-port" placeholder="Ex: 8096" required>
+                    <small style="color: var(--text-muted);">Porta web do serviço</small>
+                </div>
+                <div class="form-group">
+                    <label for="docker-protocol">Protocolo</label>
+                    <select id="docker-protocol">
+                        <option value="http">HTTP</option>
+                        <option value="https">HTTPS</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="docker-category">Categoria</label>
+                    <select id="docker-category"></select>
+                </div>
+                <button type="submit" class="btn-save">
+                    <i class="fa-solid fa-save"></i> Salvar Configuração
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+

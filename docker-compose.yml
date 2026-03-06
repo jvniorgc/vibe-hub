@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  homelab-dashboard:
+    build: .
+    container_name: homelab-dashboard
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - HOST_IP=192.168.1.151  # Altere para o IP do seu servidor
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro  # Acesso ao Docker socket (read-only)
+      - dashboard_data:/data  # Dados persistentes
+    networks:
+      - dashboard_network
+
+volumes:
+  dashboard_data:
+
+networks:
+  dashboard_network:
+    driver: bridge
+
