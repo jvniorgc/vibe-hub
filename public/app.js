@@ -1,17 +1,14 @@
-// Estado da aplicação
 let services = [];
 let categories = [];
 let hostIp = 'localhost';
 let showHiddenContainers = false;
 let hiddenCount = 0;
 
-// Inicialização
 document.addEventListener('DOMContentLoaded', () => {
     loadServices();
     loadHostInfo();
 });
 
-// Carregar informações do host
 async function loadHostInfo() {
     try {
         const response = await fetch('/api/health');
@@ -23,7 +20,6 @@ async function loadHostInfo() {
     }
 }
 
-// Carregar todos os serviços
 async function loadServices() {
     const container = document.getElementById('services-container');
     container.innerHTML = `
@@ -57,7 +53,6 @@ async function loadServices() {
     }
 }
 
-// Atualizar botão de containers ocultos
 function updateHiddenButton() {
     const btn = document.getElementById('btn-toggle-hidden');
     if (btn) {
@@ -73,13 +68,11 @@ function updateHiddenButton() {
     }
 }
 
-// Toggle exibir containers ocultos
 function toggleHiddenContainers() {
     showHiddenContainers = !showHiddenContainers;
     loadServices();
 }
 
-// Atualizar estatísticas
 function updateStats() {
     const dockerCount = services.filter(s => s.isDocker).length;
     const manualCount = services.filter(s => !s.isDocker).length;
@@ -89,7 +82,6 @@ function updateStats() {
     document.getElementById('category-count').textContent = categories.length;
 }
 
-// Renderizar serviços por categoria
 function renderServices() {
     const container = document.getElementById('services-container');
     
@@ -104,7 +96,6 @@ function renderServices() {
         return;
     }
 
-    // Agrupar por categoria
     const grouped = {};
     categories.forEach(cat => grouped[cat] = []);
     
@@ -135,10 +126,8 @@ function renderServices() {
     container.innerHTML = html;
 }
 
-// Renderizar card de serviço
 function renderServiceCard(service) {
     const color = service.color || '#00d9ff';
-    // Corrigir ícone - adicionar prefixo se necessário
     let icon = service.icon || 'cube';
     if (!icon.startsWith('fa-')) {
         icon = 'fa-' + icon;
@@ -149,7 +138,6 @@ function renderServiceCard(service) {
     const isHidden = service.isHidden || false;
     const hiddenClass = isHidden ? 'hidden-service' : '';
 
-    // Botão de ocultar/mostrar (apenas para Docker)
     const hideButton = service.isDocker ? `
         <button onclick="${isHidden ? `showContainer('${service.id}')` : `hideContainer('${service.id}')`}"
                 title="${isHidden ? 'Mostrar' : 'Ocultar'}" class="${isHidden ? 'show-btn' : 'hide-btn'}">
@@ -157,7 +145,6 @@ function renderServiceCard(service) {
         </button>
     ` : '';
 
-    // Se não tem URL, mostrar card para configurar
     if (!url) {
         return `
             <div class="service-card needs-config ${hiddenClass}" style="--card-color: #f39c12">
@@ -210,7 +197,6 @@ function renderServiceCard(service) {
     `;
 }
 
-// Atualizar select de categorias
 function updateCategorySelect() {
     const select = document.getElementById('service-category');
     select.innerHTML = categories.map(cat =>
@@ -218,7 +204,6 @@ function updateCategorySelect() {
     ).join('');
 }
 
-// ===== MODAL SERVIÇO =====
 function openServiceModal() {
     document.getElementById('service-modal').classList.add('active');
     document.getElementById('modal-title').textContent = 'Adicionar Serviço';
@@ -304,7 +289,6 @@ async function deleteService(id) {
     }
 }
 
-// ===== MODAL CATEGORIA =====
 function openCategoryModal() {
     document.getElementById('category-modal').classList.add('active');
     document.getElementById('category-form').reset();
@@ -334,21 +318,18 @@ async function saveCategory(event) {
     }
 }
 
-// Fechar modais ao clicar fora
 document.addEventListener('click', (e) => {
     if (e.target.classList.contains('modal')) {
         e.target.classList.remove('active');
     }
 });
 
-// Atalho de teclado para fechar modais
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active'));
     }
 });
 
-// ===== MODAL DOCKER OVERRIDE =====
 function editDockerService(id, name) {
     const service = services.find(s => s.id === id);
 
@@ -399,7 +380,6 @@ async function saveDockerOverride(event) {
     }
 }
 
-// ===== OCULTAR/MOSTRAR CONTAINERS =====
 async function hideContainer(id) {
     try {
         await fetch(`/api/hide-container/${id}`, { method: 'POST' });

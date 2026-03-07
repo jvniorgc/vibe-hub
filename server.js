@@ -8,17 +8,14 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST_IP = process.env.HOST_IP || 'localhost';
 
-// Conectar ao Docker socket
 const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// Arquivo para armazenar serviços manuais e categorias
 const DATA_FILE = '/data/services.json';
 
-// Função para ler dados salvos
 function readData() {
     try {
         if (fs.existsSync(DATA_FILE)) {
@@ -30,12 +27,11 @@ function readData() {
     return {
         services: [],
         categories: ['Containers', 'Media', 'Ferramentas', 'Monitoramento', 'Outros'],
-        dockerOverrides: {}, // Overrides para containers Docker (porta, protocolo, etc.)
-        hiddenContainers: [] // IDs de containers ocultos
+        dockerOverrides: {}, 
+        hiddenContainers: [] 
     };
 }
 
-// Função para salvar dados
 function saveData(data) {
     try {
         const dir = path.dirname(DATA_FILE);
@@ -48,30 +44,25 @@ function saveData(data) {
     }
 }
 
-// Portas web comuns (preferência)
 const WEB_PORTS = [80, 443, 8080, 8443, 3000, 5000, 8000, 8888, 9000, 9090, 8081, 8082, 8083, 8084, 8085, 8086, 8686, 9696, 7878, 8989, 5030];
 
-// Extrair porta exposta do container (preferir portas web)
 function extractPort(container) {
     const ports = container.Ports || [];
 
     if (ports.length === 0) return null;
 
-    // Primeiro, procurar por portas web conhecidas
     for (const port of ports) {
         if (port.PublicPort && WEB_PORTS.includes(port.PrivatePort)) {
             return port.PublicPort;
         }
     }
 
-    // Se não encontrou porta web conhecida, pegar a primeira porta TCP mapeada
     for (const port of ports) {
         if (port.PublicPort && port.Type === 'tcp') {
             return port.PublicPort;
         }
     }
 
-    // Fallback: qualquer porta pública
     for (const port of ports) {
         if (port.PublicPort) {
             return port.PublicPort;
@@ -81,7 +72,6 @@ function extractPort(container) {
     return null;
 }
 
-// Obter ícone baseado no nome do container
 function getIconForContainer(name) {
     const iconMap = {
         'portainer': 'docker',
@@ -131,7 +121,6 @@ function getIconForContainer(name) {
     return 'fa-cube';
 }
 
-// Categorizar container automaticamente
 function categorizeContainer(name) {
     const categories = {
         'Media': ['plex', 'jellyfin', 'sonarr', 'radarr', 'prowlarr', 'lidarr', 'bazarr', 'overseerr', 'tautulli'],
@@ -151,7 +140,6 @@ function categorizeContainer(name) {
     return 'Outros';
 }
 
-// Função auxiliar para processar containers
 function processContainer(container, overrides = {}) {
     const name = container.Names[0]?.replace('/', '') || 'unknown';
     const containerId = container.Id.substring(0, 12);
@@ -162,7 +150,6 @@ function processContainer(container, overrides = {}) {
     const customIcon = override.icon;
     const customCategory = override.category;
 
-    // Se não tem porta mas tem override, usar o override
     if (!port && override.port) {
         port = override.port;
     }
@@ -179,11 +166,10 @@ function processContainer(container, overrides = {}) {
         category: customCategory || categorizeContainer(name),
         isDocker: true,
         hasOverride: !!overrides[containerId] || !!overrides[name],
-        needsConfig: !port // Flag para containers que precisam configurar porta
+        needsConfig: !port 
     };
 }
 
-// API: Listar containers Docker
 app.get('/api/containers', async (req, res) => {
     try {
         const data = readData();
@@ -197,7 +183,6 @@ app.get('/api/containers', async (req, res) => {
     }
 });
 
-// API: Salvar override de container Docker
 app.put('/api/docker-override/:id', (req, res) => {
     const data = readData();
     if (!data.dockerOverrides) data.dockerOverrides = {};
@@ -211,7 +196,6 @@ app.put('/api/docker-override/:id', (req, res) => {
     res.json({ success: true, override: data.dockerOverrides[req.params.id] });
 });
 
-// API: Remover override de container Docker
 app.delete('/api/docker-override/:id', (req, res) => {
     const data = readData();
     if (data.dockerOverrides) {
@@ -221,13 +205,11 @@ app.delete('/api/docker-override/:id', (req, res) => {
     res.json({ success: true });
 });
 
-// API: Listar serviços manuais
 app.get('/api/services', (req, res) => {
     const data = readData();
     res.json(data.services);
 });
 
-// API: Adicionar serviço manual
 app.post('/api/services', (req, res) => {
     const data = readData();
     const service = {
@@ -240,7 +222,6 @@ app.post('/api/services', (req, res) => {
     res.json(service);
 });
 
-// API: Atualizar serviço
 app.put('/api/services/:id', (req, res) => {
     const data = readData();
     const index = data.services.findIndex(s => s.id === req.params.id);
@@ -253,7 +234,6 @@ app.put('/api/services/:id', (req, res) => {
     }
 });
 
-// API: Deletar serviço
 app.delete('/api/services/:id', (req, res) => {
     const data = readData();
     data.services = data.services.filter(s => s.id !== req.params.id);
@@ -261,13 +241,11 @@ app.delete('/api/services/:id', (req, res) => {
     res.json({ success: true });
 });
 
-// API: Listar categorias
 app.get('/api/categories', (req, res) => {
     const data = readData();
     res.json(data.categories);
 });
 
-// API: Adicionar categoria
 app.post('/api/categories', (req, res) => {
     const data = readData();
     if (!data.categories.includes(req.body.name)) {
@@ -277,7 +255,6 @@ app.post('/api/categories', (req, res) => {
     res.json(data.categories);
 });
 
-// API: Deletar categoria
 app.delete('/api/categories/:name', (req, res) => {
     const data = readData();
     data.categories = data.categories.filter(c => c !== req.params.name);
@@ -285,7 +262,6 @@ app.delete('/api/categories/:name', (req, res) => {
     res.json(data.categories);
 });
 
-// API: Todos os serviços (Docker + manuais)
 app.get('/api/all-services', async (req, res) => {
     try {
         const data = readData();
@@ -293,19 +269,16 @@ app.get('/api/all-services', async (req, res) => {
         const hiddenContainers = data.hiddenContainers || [];
         const containers = await docker.listContainers({ all: false });
 
-        // Processar containers com overrides
         const dockerServices = containers.map(container => {
             const processed = processContainer(container, data.dockerOverrides || {});
             processed.isHidden = hiddenContainers.includes(processed.id) || hiddenContainers.includes(processed.name);
             return processed;
         });
 
-        // Filtrar containers ocultos (a menos que showHidden seja true)
         const filteredDockerServices = showHidden
             ? dockerServices
             : dockerServices.filter(s => !s.isHidden);
 
-        // Incluir todos os containers (mesmo sem porta, se tiver override ou para configurar)
         const allServices = [...filteredDockerServices, ...data.services];
 
         res.json({
@@ -328,7 +301,6 @@ app.get('/api/all-services', async (req, res) => {
     }
 });
 
-// API: Ocultar container
 app.post('/api/hide-container/:id', (req, res) => {
     const data = readData();
     if (!data.hiddenContainers) data.hiddenContainers = [];
@@ -341,7 +313,6 @@ app.post('/api/hide-container/:id', (req, res) => {
     res.json({ success: true, hiddenContainers: data.hiddenContainers });
 });
 
-// API: Mostrar container (remover da lista de ocultos)
 app.delete('/api/hide-container/:id', (req, res) => {
     const data = readData();
     if (data.hiddenContainers) {
@@ -351,7 +322,6 @@ app.delete('/api/hide-container/:id', (req, res) => {
     res.json({ success: true, hiddenContainers: data.hiddenContainers || [] });
 });
 
-// Health check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', hostIp: HOST_IP });
 });

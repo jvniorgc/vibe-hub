@@ -9,10 +9,10 @@ services:
       - "3000:3000"
     environment:
       - PORT=3000
-      - HOST_IP=192.168.1.151  # Altere para o IP do seu servidor
+      - HOST_IP=192.168.1.151 
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro  # Acesso ao Docker socket (read-only)
-      - dashboard_data:/data  # Dados persistentes
+      - /var/run/docker.sock:/var/run/docker.sock:ro 
+      - dashboard_data:/data 
     networks:
       - dashboard_network
 
