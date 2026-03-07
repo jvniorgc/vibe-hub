@@ -338,9 +338,11 @@ function editDockerService(id, name) {
     document.getElementById('docker-name').value = name;
     document.getElementById('docker-port').value = service?.port || '';
     document.getElementById('docker-protocol').value = service?.protocol || 'http';
-    document.getElementById('docker-category').value = service?.category || 'Outros';
+    document.getElementById('docker-icon').value = service?.icon || '';
+    document.getElementById('docker-color').value = service?.color || '#00d9ff';
 
     updateDockerCategorySelect();
+    document.getElementById('docker-category').value = service?.category || 'Outros';
     document.getElementById('docker-modal').classList.add('active');
 }
 
@@ -359,10 +361,14 @@ async function saveDockerOverride(event) {
     event.preventDefault();
 
     const id = document.getElementById('docker-id').value;
+    const iconValue = document.getElementById('docker-icon').value.trim();
+
     const overrideData = {
         port: parseInt(document.getElementById('docker-port').value) || null,
         protocol: document.getElementById('docker-protocol').value,
-        category: document.getElementById('docker-category').value
+        category: document.getElementById('docker-category').value,
+        icon: iconValue || null,
+        color: document.getElementById('docker-color').value
     };
 
     try {

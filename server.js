@@ -149,6 +149,7 @@ function processContainer(container, overrides = {}) {
     const protocol = override.protocol || 'http';
     const customIcon = override.icon;
     const customCategory = override.category;
+    const customColor = override.color;
 
     if (!port && override.port) {
         port = override.port;
@@ -163,10 +164,11 @@ function processContainer(container, overrides = {}) {
         protocol: protocol,
         url: port ? `${protocol}://${HOST_IP}:${port}` : null,
         icon: customIcon || getIconForContainer(name),
+        color: customColor || '#00d9ff',
         category: customCategory || categorizeContainer(name),
         isDocker: true,
         hasOverride: !!overrides[containerId] || !!overrides[name],
-        needsConfig: !port 
+        needsConfig: !port
     };
 }
 
