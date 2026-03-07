@@ -74,7 +74,7 @@ function extractPort(container) {
 
 function getIconForContainer(name) {
     const iconMap = {
-        'portainer': 'docker',
+        'portainer': 'cubes',
         'nginx': 'server',
         'traefik': 'route',
         'plex': 'play-circle',

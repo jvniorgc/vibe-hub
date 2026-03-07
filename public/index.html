@@ -81,15 +81,10 @@
                     <label for="service-name">Nome do Serviço *</label>
                     <input type="text" id="service-name" required placeholder="Ex: Portainer">
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="service-ip">IP do Host</label>
-                        <input type="text" id="service-ip" placeholder="192.168.1.151">
-                    </div>
-                    <div class="form-group">
-                        <label for="service-port">Porta *</label>
-                        <input type="number" id="service-port" required placeholder="9000">
-                    </div>
+                <div class="form-group">
+                    <label for="service-port">Porta *</label>
+                    <input type="number" id="service-port" required placeholder="9000">
+                    <small style="color: var(--text-muted);">O IP será detectado automaticamente</small>
                 </div>
                 <div class="form-row">
                     <div class="form-group">

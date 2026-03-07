@@ -1,8 +1,12 @@
 let services = [];
 let categories = [];
-let hostIp = 'localhost';
 let showHiddenContainers = false;
 let hiddenCount = 0;
+
+// Usa o hostname atual do navegador para gerar URLs dinâmicas
+function getCurrentHost() {
+    return window.location.hostname;
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     loadServices();
@@ -11,10 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadHostInfo() {
     try {
-        const response = await fetch('/api/health');
-        const data = await response.json();
-        hostIp = data.hostIp;
-        document.getElementById('host-ip').textContent = hostIp;
+        document.getElementById('host-ip').textContent = getCurrentHost();
     } catch (error) {
         console.error('Erro ao carregar info do host:', error);
     }
@@ -134,7 +135,8 @@ function renderServiceCard(service) {
     }
 
     const protocol = service.protocol || 'http';
-    const url = service.url || (service.port ? `${protocol}://${hostIp}:${service.port}` : null);
+    const host = getCurrentHost();
+    const url = service.port ? `${protocol}://${host}:${service.port}` : null;
     const isHidden = service.isHidden || false;
     const hiddenClass = isHidden ? 'hidden-service' : '';
 
@@ -209,7 +211,6 @@ function openServiceModal() {
     document.getElementById('modal-title').textContent = 'Adicionar Serviço';
     document.getElementById('service-form').reset();
     document.getElementById('service-id').value = '';
-    document.getElementById('service-ip').placeholder = hostIp;
     document.getElementById('service-color').value = '#00d9ff';
     updateCategorySelect();
 }
@@ -222,14 +223,13 @@ async function saveService(event) {
     event.preventDefault();
 
     const id = document.getElementById('service-id').value;
-    const ip = document.getElementById('service-ip').value || hostIp;
     const port = document.getElementById('service-port').value;
     const protocol = document.getElementById('service-protocol').value;
 
     const serviceData = {
         name: document.getElementById('service-name').value,
         port: parseInt(port),
-        url: `${protocol}://${ip}:${port}`,
+        protocol: protocol,
         category: document.getElementById('service-category').value,
         icon: document.getElementById('service-icon').value || 'fa-cube',
         color: document.getElementById('service-color').value,
