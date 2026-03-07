@@ -30,7 +30,8 @@ function readData() {
     return {
         services: [],
         categories: ['Containers', 'Media', 'Ferramentas', 'Monitoramento', 'Outros'],
-        dockerOverrides: {} // Overrides para containers Docker (porta, protocolo, etc.)
+        dockerOverrides: {}, // Overrides para containers Docker (porta, protocolo, etc.)
+        hiddenContainers: [] // IDs de containers ocultos
     };
 }
 
@@ -288,20 +289,31 @@ app.delete('/api/categories/:name', (req, res) => {
 app.get('/api/all-services', async (req, res) => {
     try {
         const data = readData();
+        const showHidden = req.query.showHidden === 'true';
+        const hiddenContainers = data.hiddenContainers || [];
         const containers = await docker.listContainers({ all: false });
 
         // Processar containers com overrides
-        const dockerServices = containers.map(container =>
-            processContainer(container, data.dockerOverrides || {})
-        );
+        const dockerServices = containers.map(container => {
+            const processed = processContainer(container, data.dockerOverrides || {});
+            processed.isHidden = hiddenContainers.includes(processed.id) || hiddenContainers.includes(processed.name);
+            return processed;
+        });
+
+        // Filtrar containers ocultos (a menos que showHidden seja true)
+        const filteredDockerServices = showHidden
+            ? dockerServices
+            : dockerServices.filter(s => !s.isHidden);
 
         // Incluir todos os containers (mesmo sem porta, se tiver override ou para configurar)
-        const allServices = [...dockerServices, ...data.services];
+        const allServices = [...filteredDockerServices, ...data.services];
 
         res.json({
             services: allServices,
             categories: data.categories,
-            dockerOverrides: data.dockerOverrides || {}
+            dockerOverrides: data.dockerOverrides || {},
+            hiddenContainers: hiddenContainers,
+            hiddenCount: dockerServices.filter(s => s.isHidden).length
         });
     } catch (error) {
         console.error('Erro:', error);
@@ -309,9 +321,34 @@ app.get('/api/all-services', async (req, res) => {
         res.json({
             services: data.services,
             categories: data.categories,
-            dockerOverrides: data.dockerOverrides || {}
+            dockerOverrides: data.dockerOverrides || {},
+            hiddenContainers: data.hiddenContainers || [],
+            hiddenCount: 0
         });
     }
+});
+
+// API: Ocultar container
+app.post('/api/hide-container/:id', (req, res) => {
+    const data = readData();
+    if (!data.hiddenContainers) data.hiddenContainers = [];
+
+    const containerId = req.params.id;
+    if (!data.hiddenContainers.includes(containerId)) {
+        data.hiddenContainers.push(containerId);
+        saveData(data);
+    }
+    res.json({ success: true, hiddenContainers: data.hiddenContainers });
+});
+
+// API: Mostrar container (remover da lista de ocultos)
+app.delete('/api/hide-container/:id', (req, res) => {
+    const data = readData();
+    if (data.hiddenContainers) {
+        data.hiddenContainers = data.hiddenContainers.filter(id => id !== req.params.id);
+        saveData(data);
+    }
+    res.json({ success: true, hiddenContainers: data.hiddenContainers || [] });
 });
 
 // Health check

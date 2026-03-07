@@ -2,6 +2,8 @@
 let services = [];
 let categories = [];
 let hostIp = 'localhost';
+let showHiddenContainers = false;
+let hiddenCount = 0;
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', () => {
@@ -32,14 +34,17 @@ async function loadServices() {
     `;
 
     try {
-        const response = await fetch('/api/all-services');
+        const url = `/api/all-services${showHiddenContainers ? '?showHidden=true' : ''}`;
+        const response = await fetch(url);
         const data = await response.json();
         services = data.services;
         categories = data.categories;
+        hiddenCount = data.hiddenCount || 0;
 
         updateStats();
         renderServices();
         updateCategorySelect();
+        updateHiddenButton();
     } catch (error) {
         console.error('Erro ao carregar serviços:', error);
         container.innerHTML = `
@@ -50,6 +55,28 @@ async function loadServices() {
             </div>
         `;
     }
+}
+
+// Atualizar botão de containers ocultos
+function updateHiddenButton() {
+    const btn = document.getElementById('btn-toggle-hidden');
+    if (btn) {
+        if (hiddenCount > 0) {
+            btn.style.display = 'flex';
+            btn.innerHTML = showHiddenContainers
+                ? `<i class="fa-solid fa-eye"></i> Ocultar (${hiddenCount})`
+                : `<i class="fa-solid fa-eye-slash"></i> Ocultos (${hiddenCount})`;
+            btn.classList.toggle('active', showHiddenContainers);
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+}
+
+// Toggle exibir containers ocultos
+function toggleHiddenContainers() {
+    showHiddenContainers = !showHiddenContainers;
+    loadServices();
 }
 
 // Atualizar estatísticas
@@ -119,11 +146,21 @@ function renderServiceCard(service) {
 
     const protocol = service.protocol || 'http';
     const url = service.url || (service.port ? `${protocol}://${hostIp}:${service.port}` : null);
+    const isHidden = service.isHidden || false;
+    const hiddenClass = isHidden ? 'hidden-service' : '';
+
+    // Botão de ocultar/mostrar (apenas para Docker)
+    const hideButton = service.isDocker ? `
+        <button onclick="${isHidden ? `showContainer('${service.id}')` : `hideContainer('${service.id}')`}"
+                title="${isHidden ? 'Mostrar' : 'Ocultar'}" class="${isHidden ? 'show-btn' : 'hide-btn'}">
+            <i class="fa-solid ${isHidden ? 'fa-eye' : 'fa-eye-slash'}"></i>
+        </button>
+    ` : '';
 
     // Se não tem URL, mostrar card para configurar
     if (!url) {
         return `
-            <div class="service-card needs-config" style="--card-color: #f39c12">
+            <div class="service-card needs-config ${hiddenClass}" style="--card-color: #f39c12">
                 <span class="service-badge config-badge"><i class="fa-solid fa-gear"></i> Configurar</span>
                 <div class="service-icon" style="background: #f39c12">
                     <i class="fa-solid ${icon}"></i>
@@ -134,15 +171,17 @@ function renderServiceCard(service) {
                     <button onclick="editDockerService('${service.id}', '${service.name}')" title="Configurar">
                         <i class="fa-solid fa-gear"></i>
                     </button>
+                    ${hideButton}
                 </div>
             </div>
         `;
     }
 
     return `
-        <a href="${url}" target="_blank" class="service-card ${service.isDocker ? 'docker-service' : ''}"
+        <a href="${url}" target="_blank" class="service-card ${service.isDocker ? 'docker-service' : ''} ${hiddenClass}"
            style="--card-color: ${color}">
-            ${service.isDocker ? '<span class="service-badge"><i class="fa-brands fa-docker"></i> Docker</span>' : ''}
+            ${isHidden ? '<span class="service-badge hidden-badge"><i class="fa-solid fa-eye-slash"></i> Oculto</span>' :
+              (service.isDocker ? '<span class="service-badge"><i class="fa-brands fa-docker"></i> Docker</span>' : '')}
             <div class="service-icon" style="background: ${color}">
                 <i class="fa-solid ${icon}"></i>
             </div>
@@ -157,6 +196,7 @@ function renderServiceCard(service) {
                     <button onclick="editDockerService('${service.id}', '${service.name}')" title="Editar">
                         <i class="fa-solid fa-pen"></i>
                     </button>
+                    ${hideButton}
                 ` : `
                     <button onclick="editService('${service.id}')" title="Editar">
                         <i class="fa-solid fa-pen"></i>
@@ -356,5 +396,26 @@ async function saveDockerOverride(event) {
     } catch (error) {
         console.error('Erro ao salvar configuração:', error);
         alert('Erro ao salvar configuração');
+    }
+}
+
+// ===== OCULTAR/MOSTRAR CONTAINERS =====
+async function hideContainer(id) {
+    try {
+        await fetch(`/api/hide-container/${id}`, { method: 'POST' });
+        loadServices();
+    } catch (error) {
+        console.error('Erro ao ocultar container:', error);
+        alert('Erro ao ocultar container');
+    }
+}
+
+async function showContainer(id) {
+    try {
+        await fetch(`/api/hide-container/${id}`, { method: 'DELETE' });
+        loadServices();
+    } catch (error) {
+        console.error('Erro ao mostrar container:', error);
+        alert('Erro ao mostrar container');
     }
 }

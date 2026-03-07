@@ -133,6 +133,32 @@ header {
     box-shadow: 0 10px 30px rgba(0, 217, 255, 0.3);
 }
 
+.btn-hidden {
+    padding: 12px 24px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+    background: var(--bg-card);
+    color: var(--text-secondary);
+}
+
+.btn-hidden:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.btn-hidden.active {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: var(--text-primary);
+    border-color: transparent;
+}
+
 /* Stats */
 .stats {
     display: grid;
@@ -349,6 +375,32 @@ header {
 
 .service-badge.config-badge {
     background: #f39c12;
+}
+
+/* Hidden containers */
+.service-card.hidden-service {
+    opacity: 0.6;
+    border: 2px dashed #e74c3c;
+}
+
+.service-card.hidden-service:hover {
+    opacity: 1;
+}
+
+.service-badge.hidden-badge {
+    background: #e74c3c;
+}
+
+.service-actions .hide-btn:hover {
+    background: #e74c3c;
+}
+
+.service-actions .show-btn {
+    background: rgba(46, 204, 113, 0.3);
+}
+
+.service-actions .show-btn:hover {
+    background: #2ecc71;
 }
 
 /* Modal */
