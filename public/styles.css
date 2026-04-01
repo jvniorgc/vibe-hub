@@ -819,6 +819,14 @@ header {
     transform: scale(1.02) translateY(-3px);
 }
 
+.drag-placeholder {
+    border: 2px dashed var(--accent);
+    border-radius: 16px;
+    background: var(--accent-glow);
+    min-height: 120px;
+    pointer-events: none;
+}
+
 /* ============================================
    TOAST NOTIFICATIONS
    ============================================ */

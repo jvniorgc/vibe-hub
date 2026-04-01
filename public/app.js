@@ -480,16 +480,19 @@ function clearSearch() {
 }
 
 // ============================================
-// DRAG & DROP
+// DRAG & DROP (reordenar e mover entre categorias)
 // ============================================
 function initDragDrop() {
     document.querySelectorAll('.service-card').forEach(card => {
         card.setAttribute('draggable', 'true');
         card.addEventListener('dragstart', onDragStart);
-        card.addEventListener('dragover', onDragOver);
-        card.addEventListener('dragleave', onDragLeave);
-        card.addEventListener('drop', onDrop);
         card.addEventListener('dragend', onDragEnd);
+    });
+
+    document.querySelectorAll('.services-grid').forEach(grid => {
+        grid.addEventListener('dragover', onGridDragOver);
+        grid.addEventListener('dragleave', onGridDragLeave);
+        grid.addEventListener('drop', onGridDrop);
     });
 }
 
@@ -499,47 +502,109 @@ function onDragStart(e) {
     setTimeout(() => this.classList.add('dragging'), 0);
 }
 
-function onDragOver(e) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    if (this !== dragSrc) this.classList.add('drag-over');
-}
-
-function onDragLeave() {
-    this.classList.remove('drag-over');
-}
-
-function onDrop(e) {
-    e.preventDefault();
-    this.classList.remove('drag-over');
-    if (!dragSrc || dragSrc === this) return;
-
-    const srcGrid = dragSrc.parentElement;
-    const dstGrid = this.parentElement;
-    if (srcGrid !== dstGrid) return;
-
-    const cards = Array.from(srcGrid.children);
-    const srcIdx = cards.indexOf(dragSrc);
-    const dstIdx = cards.indexOf(this);
-
-    if (srcIdx < dstIdx) {
-        srcGrid.insertBefore(dragSrc, this.nextSibling);
-    } else {
-        srcGrid.insertBefore(dragSrc, this);
-    }
-
-    saveDragOrder(srcGrid);
-}
-
 function onDragEnd() {
     if (dragSrc) dragSrc.classList.remove('dragging');
-    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    document.querySelectorAll('.drag-placeholder').forEach(el => el.remove());
     dragSrc = null;
+}
+
+function onGridDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (!dragSrc) return;
+
+    const afterElement = getDragAfterElement(this, e.clientX, e.clientY);
+    let placeholder = document.querySelector('.drag-placeholder');
+
+    if (!placeholder) {
+        placeholder = document.createElement('div');
+        placeholder.className = 'drag-placeholder';
+    }
+
+    if (afterElement == null) {
+        this.appendChild(placeholder);
+    } else {
+        this.insertBefore(placeholder, afterElement);
+    }
+}
+
+function onGridDragLeave(e) {
+    if (!this.contains(e.relatedTarget)) {
+        document.querySelectorAll('.drag-placeholder').forEach(el => el.remove());
+    }
+}
+
+function onGridDrop(e) {
+    e.preventDefault();
+    if (!dragSrc) return;
+
+    const placeholder = document.querySelector('.drag-placeholder');
+    const srcGrid = dragSrc.parentElement;
+    const dstGrid = this;
+
+    if (placeholder && placeholder.parentElement === dstGrid) {
+        dstGrid.insertBefore(dragSrc, placeholder);
+        placeholder.remove();
+    } else {
+        dstGrid.appendChild(dragSrc);
+    }
+
+    // Mudou de categoria — persiste via API
+    if (srcGrid !== dstGrid) {
+        const newCategory = dstGrid.closest('.category-section').querySelector('h2').textContent;
+        updateServiceCategory(dragSrc.dataset.id, newCategory);
+        if (srcGrid) saveDragOrder(srcGrid);
+    }
+
+    saveDragOrder(dstGrid);
+}
+
+function getDragAfterElement(grid, x, y) {
+    const cards = [...grid.querySelectorAll('.service-card:not(.dragging)')];
+
+    return cards.reduce((closest, card) => {
+        const box = card.getBoundingClientRect();
+        const centerX = box.left + box.width / 2;
+        const centerY = box.top + box.height / 2;
+        const sameRow = Math.abs(y - centerY) < box.height / 2;
+        const before = y < centerY || (sameRow && x < centerX);
+
+        if (before) {
+            const dist = Math.hypot(x - centerX, y - centerY);
+            if (dist < closest.dist) return { dist, element: card };
+        }
+        return closest;
+    }, { dist: Infinity, element: null }).element;
+}
+
+async function updateServiceCategory(id, newCategory) {
+    const service = services.find(s => s.id === id);
+    if (!service) return;
+
+    service.category = newCategory;
+
+    try {
+        if (service.isDocker) {
+            await fetch(`/api/docker-override/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ category: newCategory })
+            });
+        } else {
+            await fetch(`/api/services/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ category: newCategory })
+            });
+        }
+    } catch (error) {
+        console.error('Erro ao atualizar categoria:', error);
+    }
 }
 
 function saveDragOrder(grid) {
     const category = grid.closest('.category-section').querySelector('h2').textContent;
-    const order = Array.from(grid.children).map(card => card.dataset.id);
+    const order = Array.from(grid.querySelectorAll('.service-card')).map(c => c.dataset.id);
     const orders = JSON.parse(localStorage.getItem('serviceOrder') || '{}');
     orders[category] = order;
     localStorage.setItem('serviceOrder', JSON.stringify(orders));
