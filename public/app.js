@@ -2,15 +2,66 @@ let services = [];
 let categories = [];
 let showHiddenContainers = false;
 let hiddenCount = 0;
+let searchQuery = '';
+let dragSrc = null;
+let previousContainerIds = null;
+let previousContainerNames = new Map();
 
 // Usa o hostname atual do navegador para gerar URLs dinâmicas
 function getCurrentHost() {
     return window.location.hostname;
 }
 
+// ============================================
+// TEMA - Dark/Light Mode
+// ============================================
+function initThemeToggle() {
+    const themeToggle = document.getElementById('theme-toggle');
+    const htmlElement = document.documentElement;
+    
+    // Verifica a preferência salva no localStorage ou sistema
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+    
+    // Aplica o tema
+    applyTheme(theme);
+    
+    // Atualiza o estado do toggle
+    if (themeToggle) {
+        themeToggle.checked = theme === 'light';
+        
+        // Listener para mudanças
+        themeToggle.addEventListener('change', (e) => {
+            const newTheme = e.target.checked ? 'light' : 'dark';
+            applyTheme(newTheme);
+            localStorage.setItem('theme', newTheme);
+        });
+    }
+    
+    // Listener para mudanças de preferência do sistema
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        const newTheme = e.matches ? 'dark' : 'light';
+        applyTheme(newTheme);
+        localStorage.setItem('theme', newTheme);
+        if (themeToggle) themeToggle.checked = newTheme === 'light';
+    });
+}
+
+function applyTheme(theme) {
+    const htmlElement = document.documentElement;
+    if (theme === 'light') {
+        htmlElement.setAttribute('data-theme', 'light');
+    } else {
+        htmlElement.removeAttribute('data-theme');
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    initThemeToggle();
     loadServices();
     loadHostInfo();
+    startPolling();
 });
 
 async function loadHostInfo() {
@@ -37,6 +88,11 @@ async function loadServices() {
         services = data.services;
         categories = data.categories;
         hiddenCount = data.hiddenCount || 0;
+
+        if (previousContainerIds === null) {
+            previousContainerIds = new Set(data.services.filter(s => s.isDocker).map(s => s.id));
+            previousContainerNames = new Map(data.services.filter(s => s.isDocker).map(s => [s.id, s.name]));
+        }
 
         updateStats();
         renderServices();
@@ -85,22 +141,22 @@ function updateStats() {
 
 function renderServices() {
     const container = document.getElementById('services-container');
-    
-    if (services.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-box-open"></i>
-                <h3>Nenhum serviço encontrado</h3>
-                <p>Adicione um serviço manualmente ou inicie containers Docker.</p>
-            </div>
-        `;
+
+    const filtered = searchQuery
+        ? services.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()))
+        : services;
+
+    if (filtered.length === 0) {
+        container.innerHTML = searchQuery
+            ? `<div class="empty-state"><i class="fas fa-search"></i><h3>Nenhum resultado para "${searchQuery}"</h3></div>`
+            : `<div class="empty-state"><i class="fas fa-box-open"></i><h3>Nenhum serviço encontrado</h3><p>Adicione um serviço manualmente ou inicie containers Docker.</p></div>`;
         return;
     }
 
     const grouped = {};
     categories.forEach(cat => grouped[cat] = []);
-    
-    services.forEach(service => {
+
+    filtered.forEach(service => {
         const cat = service.category || 'Outros';
         if (!grouped[cat]) grouped[cat] = [];
         grouped[cat].push(service);
@@ -109,22 +165,23 @@ function renderServices() {
     let html = '';
     for (const [category, categoryServices] of Object.entries(grouped)) {
         if (categoryServices.length === 0) continue;
-
+        const ordered = applyOrder(categoryServices, category);
         html += `
             <section class="category-section">
                 <div class="category-header">
                     <i class="fa-solid fa-folder"></i>
                     <h2>${category}</h2>
-                    <span class="badge">${categoryServices.length}</span>
+                    <span class="badge">${ordered.length}</span>
                 </div>
                 <div class="services-grid">
-                    ${categoryServices.map(service => renderServiceCard(service)).join('')}
+                    ${ordered.map(service => renderServiceCard(service)).join('')}
                 </div>
             </section>
         `;
     }
 
     container.innerHTML = html;
+    initDragDrop();
 }
 
 function renderServiceCard(service) {
@@ -149,7 +206,7 @@ function renderServiceCard(service) {
 
     if (!url) {
         return `
-            <div class="service-card needs-config ${hiddenClass}" style="--card-color: #f39c12">
+            <div class="service-card needs-config ${hiddenClass}" data-id="${service.id}" style="--card-color: #f39c12">
                 <span class="service-badge config-badge"><i class="fa-solid fa-gear"></i> Configurar</span>
                 <div class="service-icon" style="background: #f39c12">
                     <i class="fa-solid ${icon}"></i>
@@ -168,7 +225,7 @@ function renderServiceCard(service) {
 
     return `
         <a href="${url}" target="_blank" class="service-card ${service.isDocker ? 'docker-service' : ''} ${hiddenClass}"
-           style="--card-color: ${color}">
+           data-id="${service.id}" style="--card-color: ${color}">
             ${isHidden ? '<span class="service-badge hidden-badge"><i class="fa-solid fa-eye-slash"></i> Oculto</span>' :
               (service.isDocker ? '<span class="service-badge"><i class="fa-brands fa-docker"></i> Docker</span>' : '')}
             <div class="service-icon" style="background: ${color}">
@@ -404,4 +461,172 @@ async function showContainer(id) {
         console.error('Erro ao mostrar container:', error);
         alert('Erro ao mostrar container');
     }
+}
+
+// ============================================
+// BUSCA
+// ============================================
+function onSearch(value) {
+    searchQuery = value.trim();
+    document.getElementById('search-clear').style.display = searchQuery ? 'flex' : 'none';
+    renderServices();
+}
+
+function clearSearch() {
+    searchQuery = '';
+    document.getElementById('search-input').value = '';
+    document.getElementById('search-clear').style.display = 'none';
+    renderServices();
+}
+
+// ============================================
+// DRAG & DROP
+// ============================================
+function initDragDrop() {
+    document.querySelectorAll('.service-card').forEach(card => {
+        card.setAttribute('draggable', 'true');
+        card.addEventListener('dragstart', onDragStart);
+        card.addEventListener('dragover', onDragOver);
+        card.addEventListener('dragleave', onDragLeave);
+        card.addEventListener('drop', onDrop);
+        card.addEventListener('dragend', onDragEnd);
+    });
+}
+
+function onDragStart(e) {
+    dragSrc = this;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => this.classList.add('dragging'), 0);
+}
+
+function onDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (this !== dragSrc) this.classList.add('drag-over');
+}
+
+function onDragLeave() {
+    this.classList.remove('drag-over');
+}
+
+function onDrop(e) {
+    e.preventDefault();
+    this.classList.remove('drag-over');
+    if (!dragSrc || dragSrc === this) return;
+
+    const srcGrid = dragSrc.parentElement;
+    const dstGrid = this.parentElement;
+    if (srcGrid !== dstGrid) return;
+
+    const cards = Array.from(srcGrid.children);
+    const srcIdx = cards.indexOf(dragSrc);
+    const dstIdx = cards.indexOf(this);
+
+    if (srcIdx < dstIdx) {
+        srcGrid.insertBefore(dragSrc, this.nextSibling);
+    } else {
+        srcGrid.insertBefore(dragSrc, this);
+    }
+
+    saveDragOrder(srcGrid);
+}
+
+function onDragEnd() {
+    if (dragSrc) dragSrc.classList.remove('dragging');
+    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    dragSrc = null;
+}
+
+function saveDragOrder(grid) {
+    const category = grid.closest('.category-section').querySelector('h2').textContent;
+    const order = Array.from(grid.children).map(card => card.dataset.id);
+    const orders = JSON.parse(localStorage.getItem('serviceOrder') || '{}');
+    orders[category] = order;
+    localStorage.setItem('serviceOrder', JSON.stringify(orders));
+}
+
+function applyOrder(categoryServices, category) {
+    const orders = JSON.parse(localStorage.getItem('serviceOrder') || '{}');
+    const order = orders[category];
+    if (!order) return categoryServices;
+
+    return [...categoryServices].sort((a, b) => {
+        const ia = order.indexOf(a.id);
+        const ib = order.indexOf(b.id);
+        if (ia === -1 && ib === -1) return 0;
+        if (ia === -1) return 1;
+        if (ib === -1) return -1;
+        return ia - ib;
+    });
+}
+
+// ============================================
+// NOTIFICAÇÕES (polling + toasts)
+// ============================================
+function startPolling() {
+    setInterval(checkForChanges, 30000);
+}
+
+async function checkForChanges() {
+    try {
+        const url = `/api/all-services${showHiddenContainers ? '?showHidden=true' : ''}`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        const currentIds = new Set(data.services.filter(s => s.isDocker).map(s => s.id));
+        const currentNames = new Map(data.services.filter(s => s.isDocker).map(s => [s.id, s.name]));
+
+        if (previousContainerIds !== null) {
+            let changed = false;
+
+            previousContainerIds.forEach(id => {
+                if (!currentIds.has(id)) {
+                    showToast(`Container "${previousContainerNames.get(id) || id}" parou`, 'warning');
+                    changed = true;
+                }
+            });
+
+            currentIds.forEach(id => {
+                if (!previousContainerIds.has(id)) {
+                    showToast(`Container "${currentNames.get(id) || id}" iniciado`, 'success');
+                    changed = true;
+                }
+            });
+
+            if (changed) {
+                services = data.services;
+                categories = data.categories;
+                hiddenCount = data.hiddenCount || 0;
+                updateStats();
+                renderServices();
+                updateCategorySelect();
+                updateHiddenButton();
+            }
+        }
+
+        previousContainerIds = currentIds;
+        previousContainerNames = currentNames;
+    } catch (_) {
+        // silent — sem conexão ou servidor reiniciando
+    }
+}
+
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const icons = { warning: 'fa-triangle-exclamation', success: 'fa-circle-check', info: 'fa-circle-info' };
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <i class="fa-solid ${icons[type] || icons.info}"></i>
+        <span>${message}</span>
+        <button class="toast-close" onclick="this.parentElement.remove()" title="Fechar">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    `;
+    container.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
 }

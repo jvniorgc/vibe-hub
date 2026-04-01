@@ -19,6 +19,15 @@
                     <i class="fa-solid fa-network-wired"></i>
                     <span id="host-ip">Carregando...</span>
                 </span>
+                <div class="theme-switch-wrapper" title="Alternar tema">
+                    <label class="theme-switch">
+                        <input type="checkbox" id="theme-toggle">
+                        <span class="theme-slider">
+                            <i class="fa-solid fa-moon icon-moon"></i>
+                            <i class="fa-solid fa-sun icon-sun"></i>
+                        </span>
+                    </label>
+                </div>
                 <button class="btn-refresh" onclick="loadServices()" title="Atualizar">
                     <i class="fa-solid fa-rotate"></i>
                 </button>
@@ -34,6 +43,14 @@
             </button>
             <button class="btn-hidden" id="btn-toggle-hidden" onclick="toggleHiddenContainers()" style="display: none;">
                 <i class="fa-solid fa-eye-slash"></i> Ocultos (0)
+            </button>
+        </div>
+
+        <div class="search-bar">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="search-input" placeholder="Buscar serviços..." oninput="onSearch(this.value)" autocomplete="off">
+            <button id="search-clear" onclick="clearSearch()" style="display:none;" title="Limpar busca">
+                <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
 
@@ -180,6 +197,7 @@
         </div>
     </div>
 
+    <div id="toast-container"></div>
     <script src="app.js"></script>
 </body>
 </html>

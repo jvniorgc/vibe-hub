@@ -1,29 +1,105 @@
+/* ============================================
+   RESET
+   ============================================ */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+/* ============================================
+   DESIGN TOKENS — Tema Escuro (padrão)
+   ============================================ */
 :root {
+    /* Superfícies */
     --bg-primary: #0f0f1a;
     --bg-secondary: #1a1a2e;
     --bg-card: rgba(255, 255, 255, 0.05);
-    --accent: #00d9ff;
-    --accent-secondary: #9b59b6;
+    --bg-card-hover: rgba(255, 255, 255, 0.1);
+    --bg-input: rgba(255, 255, 255, 0.05);
+    --bg-modal: linear-gradient(135deg, #1e1e3f, #2d2d5a);
+    --bg-overlay: rgba(0, 0, 0, 0.8);
+    --bg-select-option: #1e1e3f;
+
+    /* Texto */
     --text-primary: #ffffff;
     --text-secondary: rgba(255, 255, 255, 0.7);
     --text-muted: rgba(255, 255, 255, 0.5);
+
+    /* Bordas & Separadores */
     --border: rgba(255, 255, 255, 0.1);
+    --border-hover: rgba(255, 255, 255, 0.25);
+
+    /* Acentos & Marca */
+    --accent: #00d9ff;
+    --accent-hover: #0099cc;
+    --accent-glow: rgba(0, 217, 255, 0.3);
+    --accent-secondary: #9b59b6;
+    --accent-secondary-hover: #8e44ad;
+
+    /* Status */
     --success: #2ecc71;
     --danger: #e74c3c;
+    --danger-hover: #c0392b;
+    --warning: #f39c12;
+
+    /* Docker */
     --docker-color: #2496ed;
+
+    /* Sombras */
+    --shadow-card: 0 15px 40px rgba(0, 0, 0, 0.4);
+    --shadow-btn: 0 10px 30px rgba(0, 217, 255, 0.3);
+    --shadow-btn-save: 0 8px 25px rgba(0, 217, 255, 0.4);
+
+    /* Transições */
+    --transition: 0.3s ease;
 }
 
+/* ============================================
+   DESIGN TOKENS — Tema Claro
+   ============================================ */
+[data-theme="light"] {
+    /* Superfícies */
+    --bg-primary: #f0f2f5;
+    --bg-secondary: #e4e6eb;
+    --bg-card: rgba(255, 255, 255, 0.85);
+    --bg-card-hover: rgba(255, 255, 255, 1);
+    --bg-input: rgba(0, 0, 0, 0.04);
+    --bg-modal: linear-gradient(135deg, #ffffff, #f5f6fa);
+    --bg-overlay: rgba(0, 0, 0, 0.45);
+    --bg-select-option: #ffffff;
+
+    /* Texto */
+    --text-primary: #1a1a2e;
+    --text-secondary: rgba(0, 0, 0, 0.65);
+    --text-muted: rgba(0, 0, 0, 0.45);
+
+    /* Bordas & Separadores */
+    --border: rgba(0, 0, 0, 0.1);
+    --border-hover: rgba(0, 0, 0, 0.2);
+
+    /* Acentos — ligeiramente mais escuros para contraste em fundo claro */
+    --accent: #0099cc;
+    --accent-hover: #007aa3;
+    --accent-glow: rgba(0, 153, 204, 0.25);
+    --accent-secondary: #8e44ad;
+    --accent-secondary-hover: #7d3c98;
+
+    /* Sombras */
+    --shadow-card: 0 8px 30px rgba(0, 0, 0, 0.1);
+    --shadow-btn: 0 6px 20px rgba(0, 153, 204, 0.2);
+    --shadow-btn-save: 0 6px 20px rgba(0, 153, 204, 0.25);
+}
+
+/* ============================================
+   BASE
+   ============================================ */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
     min-height: 100vh;
     color: var(--text-primary);
+    transition: background var(--transition), color var(--transition);
 }
 
 .container {
@@ -32,7 +108,9 @@ body {
     padding: 20px;
 }
 
-/* Header */
+/* ============================================
+   HEADER
+   ============================================ */
 header {
     display: flex;
     justify-content: space-between;
@@ -56,10 +134,7 @@ header {
 .logo h1 {
     font-size: 1.8rem;
     font-weight: 600;
-    background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--accent);
 }
 
 .header-right {
@@ -76,6 +151,7 @@ header {
     display: flex;
     align-items: center;
     gap: 10px;
+    transition: background var(--transition), border-color var(--transition);
 }
 
 .server-ip i {
@@ -90,24 +166,100 @@ header {
     height: 45px;
     border-radius: 50%;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all var(--transition);
 }
 
 .btn-refresh:hover {
     background: var(--accent);
     border-color: var(--accent);
+    color: #fff;
 }
 
-/* Actions */
+/* ============================================
+   THEME SWITCH
+   ============================================ */
+.theme-switch-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.theme-switch {
+    position: relative;
+    width: 56px;
+    height: 30px;
+}
+
+.theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.theme-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 30px;
+    transition: all var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 7px;
+}
+
+.theme-slider .icon-moon,
+.theme-slider .icon-sun {
+    font-size: 0.75rem;
+    z-index: 1;
+    transition: opacity var(--transition);
+}
+
+.theme-slider .icon-moon {
+    color: #cfd8dc;
+}
+
+.theme-slider .icon-sun {
+    color: #fbc02d;
+}
+
+.theme-slider::before {
+    content: '';
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    left: 4px;
+    background: var(--accent);
+    border-radius: 50%;
+    transition: transform var(--transition);
+    z-index: 2;
+}
+
+.theme-switch input:checked + .theme-slider::before {
+    transform: translateX(26px);
+}
+
+.theme-switch input:checked + .theme-slider {
+    background: var(--bg-card);
+    border-color: var(--border);
+}
+
+/* ============================================
+   ACTION BUTTONS
+   ============================================ */
 .actions {
     display: flex;
     gap: 15px;
     margin-bottom: 25px;
+    flex-wrap: wrap;
 }
 
-.btn-primary, .btn-secondary {
+.btn-primary,
+.btn-secondary {
     padding: 12px 24px;
-    border: none;
+    border: 1.5px solid;
     border-radius: 10px;
     cursor: pointer;
     font-size: 1rem;
@@ -115,22 +267,32 @@ header {
     display: flex;
     align-items: center;
     gap: 10px;
-    transition: all 0.3s ease;
+    transition: all var(--transition);
+    background: transparent;
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--accent), #0099cc);
-    color: var(--text-primary);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.btn-primary:hover {
+    background: var(--accent);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-btn);
 }
 
 .btn-secondary {
-    background: linear-gradient(135deg, var(--accent-secondary), #8e44ad);
-    color: var(--text-primary);
+    border-color: var(--accent-secondary);
+    color: var(--accent-secondary);
 }
 
-.btn-primary:hover, .btn-secondary:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 30px rgba(0, 217, 255, 0.3);
+.btn-secondary:hover {
+    background: var(--accent-secondary);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(142, 68, 173, 0.3);
 }
 
 .btn-hidden {
@@ -143,23 +305,25 @@ header {
     display: flex;
     align-items: center;
     gap: 10px;
-    transition: all 0.3s ease;
+    transition: all var(--transition);
     background: var(--bg-card);
     color: var(--text-secondary);
 }
 
 .btn-hidden:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--bg-card-hover);
     color: var(--text-primary);
 }
 
 .btn-hidden.active {
-    background: linear-gradient(135deg, #e74c3c, #c0392b);
-    color: var(--text-primary);
+    background: linear-gradient(135deg, var(--danger), var(--danger-hover));
+    color: #fff;
     border-color: transparent;
 }
 
-/* Stats */
+/* ============================================
+   STATS CARDS
+   ============================================ */
 .stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -175,6 +339,7 @@ header {
     display: flex;
     align-items: center;
     gap: 15px;
+    transition: background var(--transition), border-color var(--transition);
 }
 
 .stat-card i {
@@ -197,7 +362,9 @@ header {
     font-size: 0.9rem;
 }
 
-/* Category Sections */
+/* ============================================
+   CATEGORY SECTIONS
+   ============================================ */
 .category-section {
     margin-bottom: 40px;
 }
@@ -223,11 +390,15 @@ header {
 
 .category-header .badge {
     background: var(--accent);
-    color: var(--bg-primary);
+    color: #fff;
     padding: 3px 10px;
     border-radius: 12px;
     font-size: 0.8rem;
     font-weight: 600;
+}
+
+[data-theme="light"] .category-header .badge {
+    color: #fff;
 }
 
 .category-header .delete-category {
@@ -238,16 +409,18 @@ header {
     cursor: pointer;
     padding: 8px 12px;
     border-radius: 8px;
-    transition: all 0.3s ease;
+    transition: all var(--transition);
     opacity: 0.6;
 }
 
 .category-header .delete-category:hover {
     opacity: 1;
-    background: rgba(231, 76, 60, 0.2);
+    background: rgba(231, 76, 60, 0.15);
 }
 
-/* Services Grid */
+/* ============================================
+   SERVICES GRID & CARDS
+   ============================================ */
 .services-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -259,7 +432,7 @@ header {
     border: 1px solid var(--border);
     border-radius: 16px;
     padding: 25px;
-    transition: all 0.3s ease;
+    transition: all var(--transition);
     position: relative;
     cursor: pointer;
     text-decoration: none;
@@ -269,7 +442,7 @@ header {
 
 .service-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-card);
     border-color: var(--card-color, var(--accent));
 }
 
@@ -342,7 +515,7 @@ header {
     display: flex;
     gap: 8px;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity var(--transition);
 }
 
 .service-card:hover .service-actions {
@@ -350,37 +523,38 @@ header {
 }
 
 .service-actions button {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--bg-card-hover);
     border: none;
-    color: #fff;
+    color: var(--text-primary);
     width: 34px;
     height: 34px;
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all var(--transition);
 }
 
 .service-actions button:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--border-hover);
 }
 
 .service-actions .delete-btn:hover {
     background: var(--danger);
+    color: #fff;
 }
 
 .service-card.needs-config {
-    border: 2px dashed #f39c12;
+    border: 2px dashed var(--warning);
     cursor: pointer;
 }
 
 .service-badge.config-badge {
-    background: #f39c12;
+    background: var(--warning);
 }
 
 /* Hidden containers */
 .service-card.hidden-service {
     opacity: 0.6;
-    border: 2px dashed #e74c3c;
+    border: 2px dashed var(--danger);
 }
 
 .service-card.hidden-service:hover {
@@ -388,11 +562,12 @@ header {
 }
 
 .service-badge.hidden-badge {
-    background: #e74c3c;
+    background: var(--danger);
 }
 
 .service-actions .hide-btn:hover {
-    background: #e74c3c;
+    background: var(--danger);
+    color: #fff;
 }
 
 .service-actions .show-btn {
@@ -400,10 +575,13 @@ header {
 }
 
 .service-actions .show-btn:hover {
-    background: #2ecc71;
+    background: var(--success);
+    color: #fff;
 }
 
-/* Modal */
+/* ============================================
+   MODALS
+   ============================================ */
 .modal {
     display: none;
     position: fixed;
@@ -411,7 +589,7 @@ header {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.8);
+    background: var(--bg-overlay);
     backdrop-filter: blur(8px);
     z-index: 1000;
     justify-content: center;
@@ -424,7 +602,7 @@ header {
 }
 
 .modal-content {
-    background: linear-gradient(135deg, #1e1e3f, #2d2d5a);
+    background: var(--bg-modal);
     border-radius: 20px;
     padding: 30px;
     width: 100%;
@@ -441,7 +619,7 @@ header {
 
 @keyframes slideIn {
     from { transform: translateY(-30px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    to   { transform: translateY(0); opacity: 1; }
 }
 
 .modal-header {
@@ -462,7 +640,7 @@ header {
     color: var(--text-primary);
     font-size: 2rem;
     cursor: pointer;
-    transition: color 0.3s ease;
+    transition: color var(--transition);
     line-height: 1;
 }
 
@@ -470,6 +648,9 @@ header {
     color: var(--danger);
 }
 
+/* ============================================
+   FORMS
+   ============================================ */
 .form-group {
     margin-bottom: 20px;
 }
@@ -493,10 +674,10 @@ header {
     padding: 12px 15px;
     border: 1px solid var(--border);
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--bg-input);
     color: var(--text-primary);
     font-size: 1rem;
-    transition: border-color 0.3s ease;
+    transition: border-color var(--transition), background var(--transition);
 }
 
 .form-group input:focus,
@@ -506,8 +687,8 @@ header {
 }
 
 .form-group select option {
-    background: #1e1e3f;
-    color: #ffffff;
+    background: var(--bg-select-option);
+    color: var(--text-primary);
     padding: 10px;
 }
 
@@ -520,14 +701,14 @@ header {
 .btn-save {
     width: 100%;
     padding: 14px;
-    background: linear-gradient(135deg, var(--accent), #0099cc);
+    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
     border: none;
     border-radius: 12px;
-    color: var(--text-primary);
+    color: #fff;
     font-size: 1.1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all var(--transition);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -536,32 +717,189 @@ header {
 
 .btn-save:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 217, 255, 0.4);
+    box-shadow: var(--shadow-btn-save);
 }
 
-/* Loading & Empty States */
-.loading, .empty-state {
+/* ============================================
+   LOADING & EMPTY STATES
+   ============================================ */
+.loading,
+.empty-state {
     text-align: center;
     padding: 80px 20px;
     color: var(--text-muted);
 }
 
-.loading i, .empty-state i {
+.loading i,
+.empty-state i {
     font-size: 4rem;
     margin-bottom: 20px;
     color: var(--accent);
 }
 
-.loading p, .empty-state h3 {
+.loading p,
+.empty-state h3 {
     font-size: 1.3rem;
 }
 
-/* Responsive */
+/* ============================================
+   SEARCH BAR
+   ============================================ */
+.search-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 25px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0 16px;
+    transition: border-color var(--transition);
+}
+
+.search-bar:focus-within {
+    border-color: var(--accent);
+}
+
+.search-bar > i {
+    color: var(--text-muted);
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.search-bar input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 14px 0;
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.search-bar input::placeholder {
+    color: var(--text-muted);
+}
+
+#search-clear {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 4px;
+    border-radius: 50%;
+    transition: color var(--transition), background var(--transition);
+}
+
+#search-clear:hover {
+    color: var(--text-primary);
+    background: var(--bg-card-hover);
+}
+
+/* ============================================
+   DRAG & DROP
+   ============================================ */
+.service-card[draggable="true"] {
+    cursor: grab;
+}
+
+.service-card[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+.service-card.dragging {
+    opacity: 0.35;
+}
+
+.service-card.drag-over {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 2px var(--accent-glow);
+    transform: scale(1.02) translateY(-3px);
+}
+
+/* ============================================
+   TOAST NOTIFICATIONS
+   ============================================ */
+#toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.toast {
+    background: var(--bg-modal);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 280px;
+    max-width: 380px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    transform: translateX(120%);
+    transition: transform 0.3s ease;
+    pointer-events: all;
+}
+
+.toast.show {
+    transform: translateX(0);
+}
+
+.toast > i:first-child {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.toast > span {
+    flex: 1;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: color var(--transition);
+    flex-shrink: 0;
+}
+
+.toast-close:hover {
+    color: var(--text-primary);
+}
+
+.toast-warning { border-left: 4px solid var(--warning); }
+.toast-success { border-left: 4px solid var(--success); }
+.toast-info    { border-left: 4px solid var(--accent); }
+
+.toast-warning > i:first-child { color: var(--warning); }
+.toast-success > i:first-child { color: var(--success); }
+.toast-info    > i:first-child { color: var(--accent); }
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
 @media (max-width: 768px) {
     header {
         flex-direction: column;
         gap: 20px;
         text-align: center;
+    }
+
+    .header-right {
+        flex-wrap: wrap;
+        justify-content: center;
     }
 
     .actions {
@@ -580,4 +918,3 @@ header {
         grid-template-columns: 1fr;
     }
 }
-

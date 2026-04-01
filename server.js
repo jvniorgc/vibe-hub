@@ -3,10 +3,23 @@ const Docker = require('dockerode');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const HOST_IP = process.env.HOST_IP || 'localhost';
+
+function getLocalIP() {
+    for (const ifaces of Object.values(os.networkInterfaces())) {
+        for (const iface of ifaces) {
+            if (iface.family === 'IPv4' && !iface.internal) {
+                return iface.address;
+            }
+        }
+    }
+    return 'localhost';
+}
+
+const HOST_IP = process.env.HOST_IP || getLocalIP();
 
 const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 
